@@ -1,4 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:snatch_card/class/room.dart';
+import 'package:snatch_card/class/user.dart';
+import 'package:snatch_card/page/createRoom.dart';
+import 'package:snatch_card/page/game.dart';
+import 'package:snatch_card/page/home.dart';
+import 'package:snatch_card/page/room.dart';
+import 'package:provider/provider.dart';
+
+
 // ignore: library_prefixes
 import 'router/router.dart' as PageRouter;
 import 'tool/source.dart';
@@ -7,20 +17,49 @@ void main() {
   runApp(const MyApp());
 }
 
+final routes = {
+  '/index': (context) => HomePage(),
+  '/room': (context) => CreateRoomPage(),
+};
+
+var onGenerateRoute = (RouteSettings settings) {
+  // 统一处理
+  final String name = settings.name!;
+  final Function pageContentBuilder = routes[name]!;
+  if (pageContentBuilder != null) {
+    if (settings.arguments != null) {
+      final Route route = MaterialPageRoute(
+          builder: (context) =>
+              pageContentBuilder(context, arguments: settings.arguments));
+      return route;
+    } else {
+      final Route route =
+      MaterialPageRoute(builder: (context) => pageContentBuilder(context));
+      return route;
+    }
+  }
+};
+
+
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: '抢牌游戏',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: GameColor.theme),
-        useMaterial3: true,
-      ),
-      home: const PageRouter.Router(),
-    );
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (context) => User()),
+        ChangeNotifierProvider(create: (context) => Room()),
+      ],
+      child: MaterialApp(
+        title: '抢牌游戏',
+        theme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(seedColor: GameColor.theme),
+          useMaterial3: true,
+        ),
+        home: const PageRouter.Router(),
+      ));
   }
 }
 
@@ -60,7 +99,10 @@ class _MyHomePageState extends State<MyHomePage> {
         // TRY THIS: Try changing the color here to a specific color (to
         // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
         // change color while the other colors stay the same.
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        backgroundColor: Theme
+            .of(context)
+            .colorScheme
+            .inversePrimary,
         // Here we take the value from the MyHomePage object that was created by
         // the App.build method, and use it to set our appbar title.
         title: Text(widget.title),
@@ -89,7 +131,10 @@ class _MyHomePageState extends State<MyHomePage> {
             ),
             Text(
               '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
+              style: Theme
+                  .of(context)
+                  .textTheme
+                  .headlineMedium,
             ),
           ],
         ),
