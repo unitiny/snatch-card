@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:snatch_card/class/rootData.dart';
 import 'package:snatch_card/tool/source.dart';
 import 'package:snatch_card/tool/lib.dart';
 import 'package:snatch_card/tool/component.dart';
+import 'package:snatch_card/class/room.dart';
+import 'package:snatch_card/router/router.dart' as PageRouter;
 
 class CreateRoomPage extends StatefulWidget {
-  const CreateRoomPage({super.key});
+  const CreateRoomPage({super.key, this.effect = 0});
+
+  final int? effect;
 
   @override
   State<CreateRoomPage> createState() => _CreateRoomPage();
@@ -13,17 +19,23 @@ class CreateRoomPage extends StatefulWidget {
 class _CreateRoomPage extends State<CreateRoomPage> {
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Container(
-          width: double.infinity,
-          height: double.infinity,
-          color: GameColor.theme,
-          child: const Column(children: [
-            Expanded(flex: 13, child: Header()),
-            Expanded(flex: 75, child: Body()),
-            Expanded(flex: 12, child: Footer()),
-          ])),
-    );
+    return RootData(
+        data: widget.effect as Object,
+        child: Scaffold(
+            resizeToAvoidBottomInset: false,
+            appBar: CommonAppBar(
+                title: widget.effect == 0 ? 'CreateRoom' : 'UpdateRoom'),
+            body: Center(
+              child: Container(
+                  width: double.infinity,
+                  height: double.infinity,
+                  color: GameColor.theme,
+                  child: const Column(children: [
+                    Expanded(flex: 13, child: Header()),
+                    Expanded(flex: 75, child: Body()),
+                    Expanded(flex: 12, child: Footer()),
+                  ])),
+            )));
   }
 }
 
@@ -52,25 +64,22 @@ class Body extends StatefulWidget {
 }
 
 class _BodyState extends State<Body> {
-  List<String> peopleItems = ['Item 1', 'Item 2', 'Item 3', 'Item 4', 'Item 5'];
-  List<String> roundItems = [
-    'round 1',
-    'round 2',
-    'round 3',
-    'round 4',
-    'round 5'
-  ];
+  List<int> peopleItems = [1, 2, 3, 4, 5];
+  List<String> roundItems = ['1', '2', '3', '4', '5'];
+
+  Room? room = Room();
 
   @override
   Widget build(BuildContext context) {
+    int effect = RootData.of(context)?.data;
     return Container(
         padding: const EdgeInsets.fromLTRB(40, 20, 40, 20),
         child: Column(
           children: [
-            const SizedBox(
+            SizedBox(
               height: 50,
               child: TextField(
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   enabledBorder: OutlineInputBorder(
                       borderSide:
                           BorderSide(color: GameColor.border, width: 2)),
@@ -78,14 +87,46 @@ class _BodyState extends State<Body> {
                       borderSide: BorderSide(color: Colors.blue, width: 2)),
                   labelText: '房间号',
                 ),
+                onChanged: (value) {
+                  room?.roomId = int.parse(value);
+                },
               ),
             ),
             const SizedBox(height: 20),
             SizedBox(
-                height: 50, child: DropInput(name: "总人数", items: peopleItems)),
+              height: 50,
+              child: TextField(
+                decoration: const InputDecoration(
+                  enabledBorder: OutlineInputBorder(
+                      borderSide:
+                      BorderSide(color: GameColor.border, width: 2)),
+                  focusedBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: Colors.blue, width: 2)),
+                  labelText: '房间名',
+                ),
+                onChanged: (value) {
+                  room?.roomName = value;
+                },
+              ),
+            ),
             const SizedBox(height: 20),
             SizedBox(
-                height: 50, child: DropInput(name: "回合数", items: roundItems)),
+                height: 50,
+                child: DropInput<int>(
+                    name: "总人数",
+                    items: peopleItems,
+                    callback: (value) {
+                      room?.totalNum = int.parse(value);
+                    })),
+            const SizedBox(height: 20),
+            SizedBox(
+                height: 50,
+                child: DropInput(
+                    name: "回合数",
+                    items: roundItems,
+                    callback: (value) {
+                      room?.round = int.parse(value);
+                    })),
             const SizedBox(height: 50),
             Container(
               width: pageWidth(context),
@@ -97,19 +138,42 @@ class _BodyState extends State<Body> {
                   child: SizedBox(
                       width: 120,
                       height: 40,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: GameColor.green,
-                          shape: const RoundedRectangleBorder(
-                            borderRadius: BorderRadius.all(
-                              Radius.circular(10),
-                            ),
-                          ),
-                        ),
-                        onPressed: () {},
-                        child: const Text(
-                          "创建房间",
-                          style: TextStyle(fontSize: 16, color: Colors.black),
+                      child: Consumer<Room>(
+                        builder: (context, Room globalRoom, child) =>
+                            ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: GameColor.green,
+                                  shape: const RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.all(
+                                      Radius.circular(10),
+                                    ),
+                                  ),
+                                ),
+                                onPressed: () {
+                                  // 更新数据
+                                  Provider.of<Room>(context, listen: false)
+                                      .update(
+                                          roomId: room?.roomId,
+                                          roomName: room?.roomName,
+                                          round: room?.round,
+                                          totalNum: room?.totalNum);
+
+                                  // 跳转
+                                  Navigator.pushAndRemoveUntil(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => PageRouter.Router(
+                                          pageIndex: 1,
+                                          title: room?.roomName,
+                                        ),
+                                      ),
+                                      (route) => false);
+                                },
+                                child: child),
+                        child: Text(
+                          effect == 0 ? "创建房间" : "更新房间",
+                          style: const TextStyle(
+                              fontSize: 16, color: Colors.black),
                         ),
                       ))),
             ),
@@ -133,7 +197,9 @@ class _BodyState extends State<Body> {
                             ),
                           ),
                         ),
-                        onPressed: () {},
+                        onPressed: () {
+                          Navigator.pop(context);
+                        },
                         child: const Text(
                           "取消创建",
                           style: TextStyle(fontSize: 16, color: Colors.black),
@@ -158,4 +224,3 @@ class _FooterState extends State<Footer> {
     return Container();
   }
 }
-

@@ -1,7 +1,11 @@
+// ignore_for_file: unrelated_type_equality_checks
+
 import 'package:flutter/material.dart';
-import 'package:snatch_card/tool/source.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+import 'package:snatch_card/class/room.dart';
+import 'package:snatch_card/page/createRoom.dart';
+import 'package:snatch_card/tool/component.dart';
 import 'package:snatch_card/tool/lib.dart';
+import 'package:snatch_card/tool/source.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -83,6 +87,30 @@ class RoomCard extends StatefulWidget {
 }
 
 class _RoomCardState extends State<RoomCard> {
+  String? searchText = "";
+  List<Room> allRoom = [];
+  List<Room> roomList = [];
+
+  @override
+  void initState() {
+    super.initState();
+    for (int i = 0; i < 10; i++) {
+      allRoom.add(Room.randRoom());
+    }
+    roomList = allRoom;
+  }
+
+  void getSearch(value) {
+    setState(() {
+      searchText = value;
+      roomList = allRoom
+          .where((e) =>
+              e.roomId.toString().contains(searchText!) ||
+              e.roomName.contains(searchText!))
+          .toList();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -90,10 +118,14 @@ class _RoomCardState extends State<RoomCard> {
       decoration: const BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.all(Radius.circular(20))),
-      child: const Column(
+      child: Column(
         children: [
-          Expanded(flex: 2, child: Search()),
-          Expanded(flex: 8, child: RoomList())
+          Expanded(flex: 2, child: Search(callback: getSearch)),
+          Expanded(
+              flex: 8,
+              child: RoomList(
+                roomList: roomList,
+              ))
         ],
       ),
     );
@@ -101,7 +133,9 @@ class _RoomCardState extends State<RoomCard> {
 }
 
 class Search extends StatefulWidget {
-  const Search({super.key});
+  const Search({super.key, this.callback});
+
+  final ValueChanged<String>? callback;
 
   @override
   State<Search> createState() => _SearchState();
@@ -115,19 +149,21 @@ class _SearchState extends State<Search> {
         child: Row(
           mainAxisSize: MainAxisSize.max,
           children: [
-            const Expanded(
+            Expanded(
                 flex: 7,
                 child: SizedBox(
                   height: 45,
                   child: TextField(
-                    decoration: InputDecoration(
+                    decoration: const InputDecoration(
+                      contentPadding: EdgeInsets.symmetric(vertical: 10, horizontal: 10),
                       enabledBorder: OutlineInputBorder(
                           borderSide: BorderSide(color: GameColor.green)),
                       focusedBorder: OutlineInputBorder(
                           borderSide: BorderSide(color: GameColor.green)),
-                      labelText: '房间号',
+                      labelText: '房间号或房间名字',
                       floatingLabelBehavior: FloatingLabelBehavior.never,
                     ),
+                    onChanged: widget.callback,
                   ),
                 )),
             Expanded(
@@ -157,60 +193,38 @@ class _SearchState extends State<Search> {
 }
 
 class RoomList extends StatefulWidget {
-  const RoomList({super.key});
+  const RoomList({super.key, this.roomList});
+
+  final List<Room>? roomList;
 
   @override
   State<RoomList> createState() => _RoomListState();
 }
 
 class _RoomListState extends State<RoomList> {
-  final List<String> entries = <String>[
-    'A',
-    'B',
-    'C',
-    'A',
-    'B',
-    'C',
-    'A',
-    'B',
-    'C'
-  ];
-  final List<int> colorCodes = <int>[
-    600,
-    500,
-    100,
-    600,
-    500,
-    100,
-    600,
-    500,
-    100
-  ];
-
   Widget _initElement(BuildContext context, int index) {
-    return RoomElement(entries[index], colorCodes[index]);
+    return RoomElement(widget.roomList![index]);
   }
 
   @override
   Widget build(BuildContext context) {
     return Container(
         width: pageWidth(context) * 0.8,
-        padding: const EdgeInsets.only(top: 20),
+        padding: const EdgeInsets.only(top: 15, bottom: 10),
         decoration: const BoxDecoration(
             color: GameColor.background2,
             borderRadius: BorderRadius.all(Radius.circular(20))),
         child: ListView.builder(
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-            itemCount: entries.length,
+            itemCount: widget.roomList!.length,
             itemBuilder: _initElement));
   }
 }
 
 class RoomElement extends StatefulWidget {
-  const RoomElement(this.value, this.colorCode, {super.key});
+  const RoomElement(this.room, {super.key});
 
-  final String value;
-  final int colorCode;
+  final Room room;
 
   @override
   State<RoomElement> createState() => _RoomElementState();
@@ -228,22 +242,51 @@ class _RoomElementState extends State<RoomElement> {
           borderRadius: BorderRadius.all(Radius.circular(10))),
       child: Row(
         children: [
-          const Expanded(
+          Expanded(
               flex: 8,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text("data",
-                      style: TextStyle(
+                  Text(widget.room.roomName,
+                      style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                       )),
-                  Row(
-                    children: [
-                      IconText(icon: Icons.home, text: "1306"),
-                      IconText(icon: Icons.group, text: "3/6"),
-                      IconText(img: Source.radio, text: "待开始"),
-                    ],
+                  Container(
+                    margin: const EdgeInsets.only(right: 2),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          flex: 3,
+                          child: IconText(
+                            icon: const Icon(Icons.home, color: Colors.green),
+                            text: "${widget.room.roomId}",
+                            space: 4,
+                          ),
+                        ),
+                        Expanded(
+                          flex: 3,
+                          child: IconText(
+                              icon:
+                                  const Icon(Icons.group, color: Colors.green),
+                              text:
+                                  "${widget.room.playersId?.length}/${widget.room.totalNum}",
+                              space: 4),
+                        ),
+                        Expanded(
+                          flex: 3,
+                          child: IconText(
+                              icon: const Icon(Icons.add),
+                              img: widget.room.state == RoomState.wait
+                                  ? Source.radio1
+                                  : Source.radio2,
+                              text: widget.room.state == RoomState.wait
+                                  ? "待开始"
+                                  : "游戏中",
+                              space: 4),
+                        ),
+                      ],
+                    ),
                   )
                 ],
               )),
@@ -295,46 +338,23 @@ class _CreateBtnState extends State<CreateBtn> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: GameColor.green,
                   shape: const RoundedRectangleBorder(
-                    // //边框颜色
-                    // side: BorderSide(
-                    //   color: Colors.deepPurple,
-                    //   width: 1,
-                    // ),
-                    //边框圆角
                     borderRadius: BorderRadius.all(
                       Radius.circular(10),
                     ),
                   ),
                 ),
-                onPressed: () {},
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => const CreateRoomPage()),
+                  );
+                },
                 child: const Text(
                   "创建房间",
                   style: TextStyle(fontSize: 16, color: Colors.black),
                 ),
               ))),
-    );
-  }
-}
-
-class IconText extends StatelessWidget {
-  const IconText({super.key, this.icon, this.text, this.img});
-
-  final IconData? icon;
-  final String? text;
-  final String? img;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        icon != null
-            ? Icon(icon, color: Colors.green)
-            : SizedBox(width: 15,height: 15,child: SvgPicture.asset(img!, width: 15, height: 15)),
-        Text(text!),
-        const SizedBox(
-          width: 4,
-        )
-      ],
     );
   }
 }
