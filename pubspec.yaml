@@ -37,6 +37,12 @@ dependencies:
   cupertino_icons: ^1.0.2
   flutter_svg: ^2.0.7
   provider: ^6.0.5
+  http: ^1.1.0
+  dio: ^5.2.1+1
+  connectivity: ^3.0.6
+  web_socket_channel: ^2.4.0
+  image_picker: ^1.0.0
+  mutex: ^3.0.1
 
 dev_dependencies:
   flutter_test:

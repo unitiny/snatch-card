@@ -9,9 +9,10 @@ class Room extends ChangeNotifier {
   String roomName = "";
   int round = 0;
   int totalNum = 0;
-  int homeownerId = 0;
-  String homeownerName = "";
-  List<int>? playersId;
+  int curNum = 0;
+  int roomOwnerId = 0;
+  String roomOwnerName = "";
+  List<int> playersId = [];
   RoomState state = RoomState.wait;
 
   Room(
@@ -21,24 +22,25 @@ class Room extends ChangeNotifier {
       this.round = 0,
       this.state = RoomState.wait,
       this.totalNum = 0,
-      this.homeownerId = 0,
-      this.homeownerName = "",
-      this.playersId});
+      this.curNum = 0,
+      this.roomOwnerId = 0,
+      this.roomOwnerName = "",
+      required this.playersId});
 
   Room.randRoom() {
-    id = DateTime.now().microsecondsSinceEpoch;
+    id = randId();
     roomId = Random().nextInt(100);
     roomName = randString("room-");
     round = 1 + Random().nextInt(9);
     state = Random().nextInt(2) == 0 ? RoomState.wait : RoomState.start;
-    homeownerId = Random().nextInt(1000);
-    homeownerName = randString("user-");
+    roomOwnerId = Random().nextInt(1000);
+    roomOwnerName = randString("user-");
     totalNum = 1 + Random().nextInt(5);
-    playersId ??= [];
 
     for (int i = 0; i < Random().nextInt(totalNum); i++) {
-      playersId?.add(Random().nextInt(1000));
+      playersId.add(Random().nextInt(1000));
     }
+    curNum = playersId.length;
   }
 
   update(
@@ -48,8 +50,9 @@ class Room extends ChangeNotifier {
       round,
       state,
       totalNum,
-      homeownerId,
-      homeownerName,
+      curNum,
+      roomOwnerId,
+      roomOwnerName,
       playersId}) {
     this.id = id ?? this.id;
     this.roomId = roomId ?? this.roomId;
@@ -57,10 +60,20 @@ class Room extends ChangeNotifier {
     this.round = round ?? this.round;
     this.state = state ?? this.state;
     this.totalNum = totalNum ?? this.totalNum;
-    this.homeownerId = homeownerId ?? this.homeownerId;
-    this.homeownerName = homeownerName ?? this.homeownerName;
+    this.roomOwnerId = roomOwnerId ?? this.roomOwnerId;
+    this.roomOwnerName = roomOwnerName ?? this.roomOwnerName;
 
     this.playersId = playersId ?? this.playersId;
-    notifyListeners();
+    this.curNum = curNum ?? this.curNum;
+  }
+
+  randRoom(int ownerId) {
+    id = randNum(3);
+    roomId = randNum(3);
+    roomName = randString("room");
+    round = 10 + Random().nextInt(5);
+    totalNum = 1;
+    roomOwnerId = ownerId;
+    curNum = 1;
   }
 }
