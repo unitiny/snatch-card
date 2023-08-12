@@ -64,6 +64,12 @@ class API {
   // 文件
   static const uploadImage = "/file/v1/uploadImage";
   static const downloadImage = "/file/v1/downloadImage";
+
+  // 大厅
+  static const commentList = "/hall/v1/comment";
+  static const commentAdd = "/hall/v1/comment/add";
+  static const commentUpdate = "/hall/v1/comment/update";
+  static const commentDel = "/hall/v1/comment/del";
 }
 
 class HTTPStatus {

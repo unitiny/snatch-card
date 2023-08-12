@@ -345,9 +345,10 @@ class _StartGameState extends State<StartGame> {
 }
 
 class UserAvatar extends StatefulWidget {
-  const UserAvatar({super.key, this.size});
+  const UserAvatar({super.key, this.size, this.user});
 
   final double? size;
+  final User? user;
 
   @override
   State<UserAvatar> createState() => _UserAvatarState();
@@ -356,7 +357,7 @@ class UserAvatar extends StatefulWidget {
 class _UserAvatarState extends State<UserAvatar> {
   @override
   Widget build(BuildContext context) {
-    User user = GlobalData().user(context);
+    User user = widget.user ?? GlobalData().user(context);
     if (user.isLocalAvatar()) {
       return Image.asset(user.avatar!,
           width: widget.size ?? 95,

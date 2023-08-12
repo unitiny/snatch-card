@@ -232,26 +232,22 @@ class _ChoosePlayerState extends State<ChoosePlayer> {
       list.add(GestureDetector(
           onTap: () {
             if (widget.onTap != null) {
-              widget.onTap!(2);
               RootData.of(context)?.data["chooseUserId"] = user.id;
+              widget.onTap!(2);
             }
           },
           child: SizedBox(
               child: Column(
             children: [
-              Stack(
-                children: [
-                  Container(
-                    margin: const EdgeInsets.fromLTRB(10, 10, 10, 0),
-                    decoration: BoxDecoration(
-                      border: Border.all(width: 1),
-                      borderRadius: const BorderRadius.all(Radius.circular(10)),
-                    ),
-                    child: ClipRRect(
-                        borderRadius: BorderRadius.circular(10), // 设置圆角的半径
-                        child: const UserAvatar(size: 60)),
-                  ),
-                ],
+              Container(
+                margin: const EdgeInsets.fromLTRB(10, 10, 10, 0),
+                decoration: BoxDecoration(
+                  border: Border.all(width: 1),
+                  borderRadius: const BorderRadius.all(Radius.circular(10)),
+                ),
+                child: ClipRRect(
+                    borderRadius: BorderRadius.circular(10), // 设置圆角的半径
+                    child: const UserAvatar(size: 60)),
               ),
               Text(user.nickName!, style: const TextStyle(fontSize: 16))
             ],

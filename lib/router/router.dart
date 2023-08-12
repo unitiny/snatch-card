@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:snatch_card/class/user.dart';
+import 'package:snatch_card/page/home/comment.dart';
 import 'package:snatch_card/page/user/login.dart';
 import 'package:snatch_card/source/http.dart';
 import 'package:snatch_card/tool/component.dart';
@@ -76,6 +77,11 @@ class _RouterState extends State<Router> {
   }
 
   AppBar MyAppBar() {
+    // Widget comment = GestureDetector(
+    //   onTap: (){},
+    //   child: const Icon(Icons.add_circle_outline_rounded, size: 35, color: Colors.black54)
+    // );
+
     return AppBar(
       backgroundColor: GameColor.theme,
       title: Text(pages[currentPage]["title"] as String),
@@ -85,15 +91,25 @@ class _RouterState extends State<Router> {
           itemBuilder: (context) => [
             const PopupMenuItem(
               value: '0',
+              child: Text('留言板'),
+            ),
+            const PopupMenuItem(
+              value: '1',
               child: Text('游戏规则'),
             ),
           ],
           onSelected: (value) {
-            if (value == '0') {
+            if(value == '0') {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => const CommentPage()),
+              );
+            }else if (value == '1') {
               windowKey.currentState!.tap();
             }
           },
-          icon: const Icon(Icons.keyboard_control_rounded, size: 35),
+          icon: const Icon(Icons.add_circle_outline_rounded, size: 35, color: Colors.black54),
         ),
       ],
     );
@@ -138,9 +154,9 @@ class _RouterState extends State<Router> {
           });
         },
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: "home"),
-          BottomNavigationBarItem(icon: Icon(Icons.room), label: "room"),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: "user"),
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: "大厅"),
+          BottomNavigationBarItem(icon: Icon(Icons.room), label: "房间"),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: "用户"),
           // BottomNavigationBarItem(icon: Icon(Icons.abc), label: "room1"),
           // BottomNavigationBarItem(icon: Icon(Icons.games), label: "game"),
         ],

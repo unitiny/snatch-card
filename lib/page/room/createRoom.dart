@@ -29,7 +29,7 @@ class _CreateRoomPage extends State<CreateRoomPage> {
         child: Scaffold(
           resizeToAvoidBottomInset: false,
           appBar: CommonAppBar(
-              title: widget.effect == 0 ? 'CreateRoom' : 'UpdateRoom'),
+              title: widget.effect == 0 ? '创建房间' : '更新房间'),
           body: Center(
             child: Container(
                 width: double.infinity,

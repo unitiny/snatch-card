@@ -113,7 +113,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       return null;
                     },
                     decoration: const InputDecoration(
-                      labelText: 'Account',
+                      labelText: '账号',
                     ),
                     onSaved: (value) {
                       _userNameController.text = value!;
@@ -132,7 +132,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     return null;
                   },
                   decoration: const InputDecoration(
-                    labelText: 'Password',
+                    labelText: '密码',
                   ),
                   onSaved: (value) {
                     _passwordController.text = value!;
@@ -144,7 +144,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 },
                 child: _isLoading
                     ? CircularProgressIndicator()
-                    : const Text('Sign up'),
+                    : const Text('注册'),
               ),
             ],
           ),

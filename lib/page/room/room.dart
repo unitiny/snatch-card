@@ -1,5 +1,6 @@
 // ignore_for_file: non_constant_identifier_names
 
+import 'package:audioplayers/audioplayers.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -187,11 +188,21 @@ class _ChatState extends State<Chat> {
         message = "";
         _editController.clear();
         FocusScope.of(context).unfocus();
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
-        });
+        dropMessage();
       });
     }
+  }
+
+  void dropMessage() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+    });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    dropMessage();
   }
 
   @override
@@ -528,7 +539,6 @@ class _PlayerState extends State<Player> {
     return Positioned(
         right: 0,
         top: 0,
-        // TODO 以后再完善踢人，切换准备图标功能
         child: GestureDetector(
             onTap: () {
               if (GlobalData().user(context).id == widget.user.id) {
@@ -542,6 +552,17 @@ class _PlayerState extends State<Player> {
                 width: 23,
                 height: 23,
                 child: SvgPicture.asset(Asset.close, width: 15, height: 15))));
+  }
+
+  Widget RoomOwner() {
+    if (GlobalData().room(context).roomOwnerId !=
+        widget.user.id) {
+      return const SizedBox();
+    }
+    return const Positioned(
+        right: 0,
+        bottom: 0,
+        child: Icon(Icons.home, size: 25, color: GameColor.roomOwner));
   }
 
   Widget Prepare() {
@@ -589,10 +610,11 @@ class _PlayerState extends State<Player> {
                         border: Border.all()),
                     child: ClipRRect(
                         borderRadius: BorderRadius.circular(10), // 设置圆角的半径
-                        child: const UserAvatar(size: 60))),
+                        child: UserAvatar(user: widget.user,size: 60))),
                 const SizedBox(height: 10)
               ],
             ),
+            RoomOwner(),
             KickOut(),
             Prepare()
           ],

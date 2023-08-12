@@ -17,6 +17,7 @@ class GameColor {
   static const Color dialog2 = Color.fromRGBO(121, 138, 121, 1.0);
   static const Color dialog3 = Color.fromRGBO(0, 0, 0, 0);
   static const Color btn = Color.fromRGBO(183, 233, 253, 1.0);
+  static const Color roomOwner = Color.fromRGBO(46, 73, 83, 1);
 }
 
 class Asset {

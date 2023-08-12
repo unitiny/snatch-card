@@ -73,8 +73,8 @@ class _UserPageState extends State<UserPage> {
                 ),
                 const SizedBox(height: 32.0),
                 ListTile(
-                  leading: const Icon(Icons.settings),
-                  title: const Text('Settings'),
+                  leading: const Icon(Icons.edit),
+                  title: const Text('修改资料'),
                   onTap: () {
                     showDialog(
                       context: context,
@@ -92,7 +92,7 @@ class _UserPageState extends State<UserPage> {
                 ),
                 ListTile(
                   leading: const Icon(Icons.exit_to_app),
-                  title: const Text('Log out'),
+                  title: const Text('退出登录'),
                   onTap: () async {
                     SharedPreferences prefs =
                         await SharedPreferences.getInstance();

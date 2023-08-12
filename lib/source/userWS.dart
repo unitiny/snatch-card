@@ -268,7 +268,7 @@ class UserWS extends ChangeNotifier {
           username: user["username"],
           gender: user["gender"],
           avatar: user["image"],
-          state: user["Ready"] ? UserState.inRoomReady : UserState.inRoom));
+          state: user["ready"] ? UserState.inRoomReady : UserState.inRoom));
     }
   }
 
