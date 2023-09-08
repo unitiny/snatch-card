@@ -5,12 +5,14 @@ import 'package:snatch_card/source/userWS.dart';
 import 'package:snatch_card/source/rootData.dart';
 import 'package:snatch_card/tool/source.dart';
 import 'package:snatch_card/tool/lib.dart';
-import 'package:snatch_card/tool/component.dart';
 import 'package:snatch_card/class/room.dart';
 import 'package:snatch_card/class/user.dart';
 import 'package:snatch_card/source/http.dart';
 import 'package:snatch_card/source/globalData.dart';
 import 'package:snatch_card/router/router.dart' as PageRouter;
+import 'package:snatch_card/component/CommonAppBar.dart';
+import 'package:snatch_card/component/DropInput.dart';
+import 'package:snatch_card/component/MyDialog.dart';
 
 class CreateRoomPage extends StatefulWidget {
   const CreateRoomPage({super.key, this.effect = 0});
@@ -88,7 +90,7 @@ class _BodyState extends State<Body> {
               "room_name": room?.roomName,
             }))
         .then((res) async {
-      await connectRoom();
+      await connectRoom(context);
       skip();
     }).catchError((e) {
       print(e);
@@ -112,37 +114,12 @@ class _BodyState extends State<Body> {
     Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(
-          builder: (context) => PageRouter.Router(
+          builder: (context) => PageRouter.RouterPage(
             pageIndex: 1,
             title: roomName,
           ),
         ),
         (route) => false);
-  }
-
-  Future connectRoom() async {
-    // 获得连接服务器信息
-    await HttpRequest().GETByToken(API.getConnInfo, token(context)).then((res) {
-      // 建立ws连接
-      if (mounted) {
-        User user = GlobalData().user(context);
-        setUseState(context, UserState.inRoomReady); // 房主默认准备
-        bool isConnect = GlobalData()
-            .userWS(context)
-            .connectWS(user, res.data["serverInfo"], res.data["roomID"]);
-        Room room = GlobalData().room(context);
-        room.state = RoomState.wait;
-        room.id = int.parse(res.data["roomID"]);
-        room.roomOwnerId = user.id;
-        room.chatRecord = [];
-        if (!isConnect) {
-          MyDialog().lightTip(context, "网络连接失败");
-        }
-      }
-    }).catchError((e) {
-      var res = getErr(e);
-      MyDialog().lightTip(context, "${res["err"]}");
-    });
   }
 
   void skip() {
@@ -153,7 +130,7 @@ class _BodyState extends State<Body> {
     Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(
-          builder: (context) => PageRouter.Router(
+          builder: (context) => PageRouter.RouterPage(
             pageIndex: 1,
             title: room?.roomName,
           ),

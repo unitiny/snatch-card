@@ -1,21 +1,28 @@
 import 'dart:async';
 import 'package:provider/provider.dart';
 import 'package:flutter/material.dart';
+import 'package:snatch_card/page/game/chat.dart';
 import 'package:snatch_card/page/game/scoreRank.dart';
 import 'package:snatch_card/page/game/playCard.dart';
-import 'package:snatch_card/class/game.dart';
-import 'package:snatch_card/class/room.dart';
+import 'package:snatch_card/page/game/component/PlayArea.dart';
+import 'package:snatch_card/page/game/component/Cardom.dart';
 import 'package:snatch_card/source/globalData.dart';
 import 'package:snatch_card/source/rootData.dart';
-import 'package:snatch_card/class/user.dart';
-import 'package:snatch_card/class/card.dart' as GameCard;
-import 'package:snatch_card/class/userCard.dart';
 import 'package:snatch_card/source/userWS.dart';
 import 'package:snatch_card/tool/lib.dart';
 import 'package:snatch_card/tool/source.dart';
-import 'package:snatch_card/tool/component.dart';
+import 'package:snatch_card/class/game.dart';
+import 'package:snatch_card/class/room.dart';
+import 'package:snatch_card/class/user.dart';
+import 'package:snatch_card/class/userCard.dart';
+import 'package:snatch_card/class/card.dart' as GameCard;
 import 'package:snatch_card/router/router.dart' as PageRouter;
 import 'package:audioplayers/audioplayers.dart';
+import 'package:snatch_card/component/Rule.dart';
+import 'package:snatch_card/component/DraggableFab.dart';
+import 'package:snatch_card/component/IconText.dart';
+import 'package:snatch_card/component/OtherOperators.dart';
+import 'package:snatch_card/component/ShowToast.dart';
 
 Game TheGame(BuildContext context) {
   return RootData.of(context)?.data["game"];
@@ -31,11 +38,14 @@ class GamePage extends StatefulWidget {
 class _GamePage extends State<GamePage> {
   Game game = Game();
   AudioPlayer player = AudioPlayer();
+
+  // 通过key调用子组件方法
   GlobalKey<RuleState> windowKey = GlobalKey();
 
   // 都以userId为key
   Map<int, User> userMap = {};
   Map<int, UserCards> cardMap = {};
+  Map<int, Offset> userPositionMap = {};
   Map<String, Object> globalData = {};
 
   AppBar MyAppBar() {
@@ -61,11 +71,11 @@ class _GamePage extends State<GamePage> {
             } else if (value == '1') {
               UserWS userWS = GlobalData().userWS(context);
               userWS.clean();
-              GlobalData().user(context).state = UserState.inHome;
+              setUseState(context, UserState.inRoom);
               Navigator.pushAndRemoveUntil(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => const PageRouter.Router(
+                    builder: (context) => const PageRouter.RouterPage(
                       pageIndex: 0,
                     ),
                   ),
@@ -84,6 +94,12 @@ class _GamePage extends State<GamePage> {
     });
   }
 
+  void changeChatShow() {
+    setState(() {
+      game.showChat = !game.showChat!;
+    });
+  }
+
   @override
   void dispose() {
     player.stop();
@@ -94,6 +110,9 @@ class _GamePage extends State<GamePage> {
   @override
   void initState() {
     super.initState();
+    // 主动获取信息渲染游戏
+    GlobalData().userWS(context).getGameState({});
+
     Room room = GlobalData().room(context);
     room.round != 0 ? game.totalRound = room.round : null;
     game.roomId = room.roomId;
@@ -104,7 +123,9 @@ class _GamePage extends State<GamePage> {
       "game": game,
       "userMap": userMap,
       "cardMap": cardMap,
-      "dialogAction": dialogAction
+      "userPositionMap": userPositionMap,
+      "dialogAction": dialogAction,
+      "changeChatShow": changeChatShow
     };
   }
 
@@ -128,13 +149,15 @@ class _GamePage extends State<GamePage> {
                   Expanded(flex: 80, child: Body()),
                   Expanded(flex: 1, child: Footer()),
                 ])),
+            const ShowChatMsg(),
+            game.showChat! ? ChatTool() : Container(),
             game.showWindow! ? Window() : Container(),
             Rule(key: windowKey)
           ],
         )),
-        floatingActionButton: OtherOperators(
+        floatingActionButton: DraggableFab(OtherOperators(
             callback: dialogAction,
-            icon: game.showWindow! ? Icons.close : Icons.games),
+            icon: game.showWindow! ? Icons.close : Icons.games)),
       ),
     );
   }
@@ -193,7 +216,7 @@ class _HeaderState extends State<Header> {
                     Navigator.pushAndRemoveUntil(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => const PageRouter.Router(
+                          builder: (context) => const PageRouter.RouterPage(
                             pageIndex: 0,
                           ),
                         ),
@@ -281,24 +304,11 @@ class _BodyState extends State<Body> {
         width: double.infinity,
         height: double.infinity,
         padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
-        child: Column(children: [
-          const Expanded(flex: 40, child: OtherPlayers()),
-          const Expanded(flex: 60, child: SnatchCard()),
-          Expanded(
-              flex: 15,
-              child: Selector<UserWS, UserWS>(
-                  shouldRebuild: (pre, next) =>
-                      next.isNotify(ServiceType.gameStateResponseType, id: 1) ||
-                      next.isNotify(ServiceType.useSpecialCardResponseType,
-                          id: 1),
-                  selector: (context, provider) => provider,
-                  builder: (context, userWS, child) {
-                    return PlayArea(
-                        user: userWS.user,
-                        userCards: userWS.store["userCardsMap"]
-                                ?[userWS.user.id] ??
-                            UserCards(userId: userWS.user.id));
-                  })),
+        child: const Column(children: [
+          Expanded(flex: 40, child: OtherPlayers()),
+          Expanded(flex: 60, child: SnatchCard()),
+          Expanded(flex: 16, child: Self()),
+          Expanded(flex: 4, child: Operations())
         ]));
   }
 }
@@ -312,17 +322,7 @@ class Footer extends StatefulWidget {
 
 class _FooterState extends State<Footer> {
   VoidCallback listener = () {};
-  VoidCallback listener2 = () {};
   UserWS userWS = UserWS();
-
-  void showToast() {
-    if (userWS.isNotify(ServiceType.msgResponseType) ||
-        userWS.isNotify(ServiceType.useSpecialCardResponseType, id: 3)) {
-      if (userWS.store["tip"] != null && userWS.store["tip"] != "") {
-        MyDialog().lightTip(context, userWS.store["tip"], display: 1000);
-      }
-    }
-  }
 
   void gameOver() {
     if (userWS.isNotify(ServiceType.gameOverResponseType)) {
@@ -339,22 +339,19 @@ class _FooterState extends State<Footer> {
   void initState() {
     super.initState();
     userWS = GlobalData().userWS(context);
-    listener = showToast;
-    listener2 = gameOver;
+    listener = gameOver;
     userWS.addListener(listener);
-    userWS.addListener(listener2);
   }
 
   @override
   void dispose() {
     userWS.removeListener(listener);
-    userWS.removeListener(listener2);
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Container();
+    return const Stack(children: [ShowToast(msgOrigin: 1, display: 1000)]);
   }
 }
 
@@ -366,7 +363,7 @@ class OtherPlayers extends StatefulWidget {
 }
 
 class _OtherPlayersState extends State<OtherPlayers> {
-  List<PlayArea> _initElements() {
+  List<Widget> _initElements() {
     User user = GlobalData().user(context);
     UserWS userWS = GlobalData().userWS(context);
 
@@ -375,7 +372,7 @@ class _OtherPlayersState extends State<OtherPlayers> {
             element.id != user.id && element.userName != user.userName)
         .toList();
 
-    List<PlayArea> list = [];
+    List<Widget> list = [];
     for (var elem in userList) {
       list.add(PlayArea(
           user: elem,
@@ -399,6 +396,7 @@ class _OtherPlayersState extends State<OtherPlayers> {
         selector: (context, provider) => provider,
         builder: (context, userWS, child) {
           return Column(
+            mainAxisAlignment: MainAxisAlignment.start,
             children: _initElements(),
           );
         });
@@ -550,230 +548,51 @@ class _SnatchCardState extends State<SnatchCard> {
   }
 }
 
-class PlayArea extends StatefulWidget {
-  const PlayArea({super.key, required this.user, required this.userCards});
-
-  final User user;
-  final UserCards userCards;
+class Self extends StatefulWidget {
+  const Self({super.key});
 
   @override
-  State<PlayArea> createState() => _PlayAreaState();
+  State<Self> createState() => _SelfState();
 }
 
-class _PlayAreaState extends State<PlayArea> {
-  List<Widget> _initElements() {
-    List<Widget> list = [];
-    for (var elem in widget.userCards.cards) {
-      if (elem.category == CardCategory.special) {
-        continue;
-      }
-      list.add(Column(children: [
-        CardDom(
-          card: elem,
-        ),
-        const SizedBox(height: 10)
-      ]));
-    }
-    return list;
-  }
-
-  List<GameCard.Card> specialCard() {
-    return widget.userCards.cards
-        .where((element) => element.category == CardCategory.special)
-        .toList();
-  }
-
-  void record() {
-    // 记录user和card到全局变量里
-    RootData.of(context)?.data["userMap"][widget.user.id] = widget.user;
-    RootData.of(context)?.data["cardMap"][widget.user.id] = widget.userCards;
-    if (GlobalData().debug) {
-      printCard();
-    }
-  }
-
-  void printCard() {
-    print(widget.user.id);
-    print("---------");
-    widget.userCards.cards.forEach((element) {
-      print("${element.id} - ${element.commonVal} - ${element.specialVal}");
-    });
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    widget.userCards.userId = widget.user.id;
-  }
-
+class _SelfState extends State<Self> {
   @override
   Widget build(BuildContext context) {
-    record();
+    return Selector<UserWS, UserWS>(
+        shouldRebuild: (pre, next) =>
+            next.isNotify(ServiceType.gameStateResponseType, id: 1) ||
+            next.isNotify(ServiceType.useSpecialCardResponseType, id: 1),
+        selector: (context, provider) => provider,
+        builder: (context, userWS, child) {
+          return Column(children: [
+            PlayArea(
+                user: userWS.user,
+                userCards: userWS.store["userCardsMap"]?[userWS.user.id] ??
+                    UserCards(userId: userWS.user.id))
+          ]);
+        });
+  }
+}
+
+class Operations extends StatefulWidget {
+  const Operations({super.key});
+
+  @override
+  State<Operations> createState() => _OperationsState();
+}
+
+class _OperationsState extends State<Operations> {
+  @override
+  Widget build(BuildContext context) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            PlayerAvatar(user: widget.user, specialCard: specialCard()),
-            const SizedBox(
-              width: 10,
-            ),
-            ..._initElements(),
-          ],
-        ),
-        Selector<UserWS, UserWS>(
-            shouldRebuild: (pre, next) =>
-                next.isNotify(ServiceType.scoreRankResponseType,
-                    id: widget.user.id) ||
-                next.isNotify(ServiceType.gameStateResponseType,
-                    id: 10 + widget.user.id),
-            // 4 + widget.user.id 防止用户id和其余组件id重复
-            selector: (context, provider) => provider,
-            builder: (context, userWS, child) {
-              return SizedBox(
-                  width: 70,
-                  height: 60,
-                  child: Center(
-                      child: Text(
-                    userWS.store["score"]?[widget.user.id] ?? "0",
-                    style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 30,
-                        color: Colors.red),
-                  )));
-            }),
+        GestureDetector(
+          onTap: () {
+            RootData.of(context)?.data["changeChatShow"]();
+          },
+          child: const Icon(Icons.chat, color: GameColor.btn2),
+        )
       ],
     );
-  }
-}
-
-class PlayerAvatar extends StatefulWidget {
-  const PlayerAvatar({super.key, required this.user, this.specialCard});
-
-  final User user;
-  final List<GameCard.Card>? specialCard;
-
-  @override
-  State<PlayerAvatar> createState() => _PlayerAvatarState();
-}
-
-class _PlayerAvatarState extends State<PlayerAvatar> {
-  List<bool> hasSpecial = [false, false, false, false];
-
-  void getSpecial() {
-    reset();
-    if (widget.specialCard != null) {
-      for (var card in widget.specialCard!) {
-        switch (card.specialVal!) {
-          case SpecialCardVal.redBombCard:
-            hasSpecial[0] = true;
-            break;
-          case SpecialCardVal.yellowWildCard:
-            hasSpecial[1] = true;
-            break;
-          case SpecialCardVal.greenSwapCard:
-            hasSpecial[2] = true;
-            break;
-          case SpecialCardVal.blueModifyCard:
-            hasSpecial[3] = true;
-        }
-      }
-    }
-  }
-
-  void reset() {
-    hasSpecial = [false, false, false, false];
-  }
-
-  @override
-  void initState() {
-    super.initState();
-  }
-
-  @override
-  void dispose() {
-    reset();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    getSpecial();
-    return SizedBox(
-        width: 70,
-        height: 100,
-        child: Column(
-          children: [
-            ClipOval(
-              child: Container(
-                  decoration: BoxDecoration(
-                    border: Border(
-                      top: hasSpecial[0]
-                          ? const BorderSide(color: Colors.red, width: 7)
-                          : const BorderSide(
-                              color: GameColor.background2, width: 7),
-                      bottom: hasSpecial[1]
-                          ? const BorderSide(color: Colors.yellow, width: 7)
-                          : const BorderSide(
-                              color: GameColor.background2, width: 7),
-                      left: hasSpecial[2]
-                          ? const BorderSide(color: Colors.green, width: 7)
-                          : const BorderSide(
-                              color: GameColor.background2, width: 7),
-                      right: hasSpecial[3]
-                          ? const BorderSide(color: Colors.blue, width: 7)
-                          : const BorderSide(
-                              color: GameColor.background2, width: 7),
-                    ),
-                  ),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      border: Border.all(width: 1, color: Colors.black),
-                    ),
-                    child: const ClipOval(
-                      child: UserAvatar(size: 40),
-                    ),
-                  )),
-            ),
-            Text(widget.user.nickName!,
-                style: const TextStyle(overflow: TextOverflow.ellipsis))
-          ],
-        ));
-  }
-}
-
-class CardDom extends StatefulWidget {
-  const CardDom({super.key, required this.card});
-
-  final GameCard.Card card;
-
-  @override
-  State<CardDom> createState() => _CardDomState();
-}
-
-class _CardDomState extends State<CardDom> {
-  @override
-  Widget build(BuildContext context) {
-    if (widget.card.hasOwner!) {
-      return const SizedBox(width: 45, height: 60);
-    }
-    return Container(
-        width: 45,
-        height: 60,
-        decoration: BoxDecoration(
-            color: widget.card.category == CardCategory.common
-                ? Colors.white
-                : widget.card.color(),
-            borderRadius: const BorderRadius.all(Radius.circular(5)),
-            border: Border.all(width: 1, color: Colors.black)),
-        child: Center(
-            child: widget.card.category == CardCategory.common
-                ? Text(
-                    widget.card.commonVal!,
-                    style: const TextStyle(
-                        fontSize: 22, fontWeight: FontWeight.bold),
-                  )
-                : Icon(widget.card.icon())));
   }
 }

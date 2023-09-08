@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:snatch_card/class/room.dart';
 import 'package:snatch_card/class/user.dart';
@@ -5,11 +7,12 @@ import 'package:snatch_card/source/globalData.dart';
 import 'package:snatch_card/source/http.dart';
 import 'package:snatch_card/page/room/createRoom.dart';
 import 'package:snatch_card/router/router.dart' as PageRouter;
-import 'package:snatch_card/tool/component.dart';
 import 'package:snatch_card/tool/lib.dart';
 import 'package:snatch_card/tool/source.dart';
-import 'package:dio/dio.dart';
-import 'dart:async';
+import 'package:snatch_card/component/StartGame.dart';
+import 'package:snatch_card/component/IconText.dart';
+import 'package:snatch_card/component/MyDialog.dart';
+
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -302,6 +305,7 @@ class RoomElement extends StatefulWidget {
 }
 
 class _RoomElementState extends State<RoomElement> {
+  // 这里代码写得有点乱，请求嵌套太多了
   void joinRoom() async {
     // 检查是否已在房间，否则要求退房再加入
     // if(GlobalData().user(context).state != UserState.inHome) {
@@ -331,12 +335,14 @@ class _RoomElementState extends State<RoomElement> {
           }
           Navigator.pushAndRemoveUntil(context,
               MaterialPageRoute(builder: (BuildContext context) {
-            return PageRouter.Router(pageIndex: 1, title: widget.room.roomName);
+            return PageRouter.RouterPage(pageIndex: 1, title: widget.room.roomName);
           }), (route) => false);
+
         }).catchError((error) {
           var res = getErr(error);
           MyDialog().lightTip(context, "${res["err"]}");
         });
+
       }
     }).catchError((e) {
       var res = getErr(e);

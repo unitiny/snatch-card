@@ -4,9 +4,9 @@ const String UserToken =
     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJJRCI6MywiZXhwIjoxNjg4NjEzMTY3LCJpc3MiOiJwcGVldyIsIm5iZiI6MTY4ODE4MTE2N30.7OB4yy3N9z1vO-s17LtKHuVMsLKfzjO72hlXdw7mpbQ";
 
 class GameColor {
-  static const Color theme = Color.fromRGBO(140, 178, 194, 1);
+  static const Color empty = Color.fromRGBO(0, 0, 0, 0);
 
-  // static const Color background = Color.fromRGBO(140, 178, 194, 1);
+  static const Color theme = Color.fromRGBO(140, 178, 194, 1);
   static const Color green = Color.fromRGBO(151, 208, 145, 1);
   static const Color background1 = Color.fromRGBO(46, 73, 83, 0.33);
   static const Color background2 = Color.fromRGBO(112, 147, 163, 1);
@@ -17,6 +17,7 @@ class GameColor {
   static const Color dialog2 = Color.fromRGBO(121, 138, 121, 1.0);
   static const Color dialog3 = Color.fromRGBO(0, 0, 0, 0);
   static const Color btn = Color.fromRGBO(183, 233, 253, 1.0);
+  static const Color btn2 = Color.fromRGBO(46, 73, 83, 0.6);
   static const Color roomOwner = Color.fromRGBO(46, 73, 83, 1);
 }
 

@@ -1,21 +1,21 @@
 // ignore_for_file: non_constant_identifier_names
 
-import 'package:audioplayers/audioplayers.dart';
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
-import 'package:snatch_card/page/game/game.dart';
-import 'package:snatch_card/source/http.dart';
 import 'package:snatch_card/class/room.dart';
 import 'package:snatch_card/source/userWS.dart';
 import 'package:snatch_card/class/user.dart';
 import 'package:snatch_card/page/room/createRoom.dart';
-import 'package:snatch_card/tool/component.dart';
 import 'package:snatch_card/tool/source.dart';
 import 'package:snatch_card/tool/lib.dart';
 import 'package:snatch_card/source/globalData.dart';
+import 'package:snatch_card/component/StartGame.dart';
 import 'package:snatch_card/router/router.dart' as PageRouter;
+import 'package:snatch_card/component/MyDialog.dart';
+import 'package:snatch_card/component/Reconnect.dart';
+import 'package:snatch_card/component/ShowToast.dart';
+import 'package:snatch_card/component/UserAvatar.dart';
 
 class RoomPage extends StatefulWidget {
   const RoomPage({super.key});
@@ -36,8 +36,6 @@ class _RoomPage extends State<RoomPage> {
 
   @override
   Widget build(BuildContext context) {
-    setUseState(context, UserState.inRoom);
-    GlobalData().room(context).state = RoomState.wait;
     return Center(
       child: Container(
           width: double.infinity,
@@ -83,15 +81,51 @@ class _BodyState extends State<Body> {
   Widget build(BuildContext context) {
     return Consumer<Room>(
       builder: (context, Room globalRoom, child) {
-        if (GlobalData().room(context).id == 0 &&
-            GlobalData().room(context).roomId == 0) {
+        if (globalRoom.id == 0 && globalRoom.roomId == 0) {
+          // 未创建房间
           return const Center(
               child: Text(
             "请创建或加入房间",
             style: TextStyle(fontSize: 22, fontWeight: FontWeight.w500),
           ));
+        } else if (globalRoom.roomId != 0 &&
+            GlobalData().user(context).serverState == UserState.inGame) {
+          // 在游戏中
+          return Center(
+              child: SizedBox(
+                  width: 120,
+                  height: 60,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: GameColor.green,
+                      shape: const RoundedRectangleBorder(
+                        borderRadius: BorderRadius.all(
+                          Radius.circular(2),
+                        ),
+                      ),
+                    ),
+                    onPressed: () {
+                      checkAndConnect(context);
+                      // 获取游戏状态来区分所在房间还是游戏，再重连
+                      UserWS userWS = GlobalData().userWS(context);
+                      userWS.getStateMsg({});
+                    },
+                    child: const Text(
+                      "重新连接",
+                      style: TextStyle(fontSize: 16, color: Colors.black),
+                    ),
+                  )));
+        } else {
+          // 在房间中
+          User user = GlobalData().user(context);
+          if (user.state != UserState.inRoom &&
+              user.state != UserState.inRoomReady) {
+            setUseState(context, UserState.inRoom);
+          }
+
+          GlobalData().room(context).state = RoomState.wait;
+          return Container(child: child);
         }
-        return Container(child: child);
       },
       child: GestureDetector(
         onTap: () {
@@ -101,7 +135,7 @@ class _BodyState extends State<Body> {
             padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
             child: const Column(
               children: [
-                Expanded(flex: 4, child: Chat()),
+                Expanded(flex: 4, child: ChatBoard()),
                 Expanded(flex: 5, child: People()),
                 Expanded(flex: 1, child: OperateBoard()),
               ],
@@ -124,6 +158,7 @@ class _FooterState extends State<Footer> {
     return Stack(
       children: [
         const StartGame(),
+        const Reconnect(),
         ShowToast(
             type: ServiceType.kickerResponseType,
             callback: () {
@@ -131,7 +166,7 @@ class _FooterState extends State<Footer> {
               Navigator.pushAndRemoveUntil(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => const PageRouter.Router(
+                    builder: (context) => const PageRouter.RouterPage(
                       pageIndex: 0,
                     ),
                   ),
@@ -143,14 +178,14 @@ class _FooterState extends State<Footer> {
   }
 }
 
-class Chat extends StatefulWidget {
-  const Chat({super.key});
+class ChatBoard extends StatefulWidget {
+  const ChatBoard({super.key});
 
   @override
-  State<Chat> createState() => _ChatState();
+  State<ChatBoard> createState() => _ChatBoardState();
 }
 
-class _ChatState extends State<Chat> {
+class _ChatBoardState extends State<ChatBoard> {
   String message = "";
   final ScrollController _scrollController = ScrollController();
   final TextEditingController _editController = TextEditingController();
@@ -327,22 +362,17 @@ class _PeopleState extends State<People> {
         selector: (context, provider) => provider,
         builder: (context, userWS, child) {
           // 更新房间信息
+          Map<String, dynamic>? data =
+              userWS.res[ServiceType.roomInfoResponseType];
           Room room = GlobalData().room(context);
           room.update(
-              roomId: userWS.res[ServiceType.roomInfoResponseType]?["roomInfo"]
-                  ?["roomID"],
-              roomName: userWS.res[ServiceType.roomInfoResponseType]
-                  ?["roomInfo"]?["roomName"],
-              round: userWS.res[ServiceType.roomInfoResponseType]?["roomInfo"]
-                  ?["gameCount"],
-              totalNum: userWS.res[ServiceType.roomInfoResponseType]
-                  ?["roomInfo"]?["maxUserNumber"],
-              roomOwnerId: userWS.res[ServiceType.roomInfoResponseType]
-                  ?["roomInfo"]?["roomOwner"],
+              roomId: data?["roomInfo"]?["roomID"],
+              roomName: data?["roomInfo"]?["roomName"],
+              round: data?["roomInfo"]?["gameCount"],
+              totalNum: data?["roomInfo"]?["maxUserNumber"],
+              roomOwnerId: data?["roomInfo"]?["roomOwner"],
               roomOwnerName: userWS.userList
-                  .firstWhere(
-                      (e) =>
-                          e.id == userWS.res[ServiceType.roomInfoResponseType]?["roomInfo"]?["roomOwner"],
+                  .firstWhere((e) => e.id == data?["roomInfo"]?["roomOwner"],
                       orElse: () => User())
                   .nickName,
               playersId: userWS.userList.map((e) => e.id).toList());
@@ -410,6 +440,8 @@ class _OperateBoardState extends State<OperateBoard> {
           ),
           onPressed: () async {
             // 检查能否开始游戏 条件：房主，房间满人，ws连接正常
+            checkAndConnect(context);
+
             UserWS userWS = GlobalData().userWS(context);
             if (userWS.user.id != GlobalData().user(context).id ||
                 userWS.WS == null ||
@@ -447,17 +479,21 @@ class _OperateBoardState extends State<OperateBoard> {
           ),
           onPressed: () {
             UserWS userWS = GlobalData().userWS(context);
+            print(userWS.user.state);
+
             userWS.userReadyState({
               "isReady":
                   userWS.user.state == UserState.inRoomReady ? false : true
             });
+
             if (userWS.user.state == UserState.inRoomReady) {
               userWS.user.state = UserState.inRoom;
-              GlobalData().user(context).state = UserState.inRoom;
+              setUseState(context, UserState.inRoom);
             } else {
               userWS.user.state = UserState.inRoomReady;
-              GlobalData().user(context).state = UserState.inRoomReady;
+              setUseState(context, UserState.inRoomReady);
             }
+            print(userWS.user.state);
           },
           child: const Text(
             "准备",
@@ -486,7 +522,7 @@ class _OperateBoardState extends State<OperateBoard> {
             Navigator.pushAndRemoveUntil(
                 context,
                 MaterialPageRoute(
-                    builder: (context) => const PageRouter.Router(
+                    builder: (context) => const PageRouter.RouterPage(
                           pageIndex: 0,
                         )),
                 (router) => false);
@@ -555,8 +591,7 @@ class _PlayerState extends State<Player> {
   }
 
   Widget RoomOwner() {
-    if (GlobalData().room(context).roomOwnerId !=
-        widget.user.id) {
+    if (GlobalData().room(context).roomOwnerId != widget.user.id) {
       return const SizedBox();
     }
     return const Positioned(
@@ -566,34 +601,29 @@ class _PlayerState extends State<Player> {
   }
 
   Widget Prepare() {
-    return Selector<UserWS, UserWS>(
-        shouldRebuild: (pre, next) =>
-            next.isNotify(ServiceType.roomInfoResponseType),
-        selector: (context, provider) => provider,
-        builder: (context, userWS, child) {
-          if (widget.user.state == UserState.inRoomReady) {
-            return Positioned(
-              bottom: 0,
-              child: Container(
-                  width: 40,
-                  decoration: const BoxDecoration(
-                      color: GameColor.green,
-                      borderRadius: BorderRadius.all(Radius.circular(5))),
-                  child: const Text(
-                    "准备",
-                    textAlign: TextAlign.center,
-                  )),
-            );
-          }
-          return Positioned(
-            bottom: 0,
-            child: Container(width: 40),
-          );
-        });
+    if (widget.user.state == UserState.inRoomReady) {
+      return Positioned(
+        bottom: 0,
+        child: Container(
+            width: 40,
+            decoration: const BoxDecoration(
+                color: GameColor.green,
+                borderRadius: BorderRadius.all(Radius.circular(5))),
+            child: const Text(
+              "准备",
+              textAlign: TextAlign.center,
+            )),
+      );
+    }
+    return Positioned(
+      bottom: 0,
+      child: Container(width: 40),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    print("Player ${widget.user.state}");
     return SizedBox(
         child: Column(
       children: [
@@ -610,7 +640,7 @@ class _PlayerState extends State<Player> {
                         border: Border.all()),
                     child: ClipRRect(
                         borderRadius: BorderRadius.circular(10), // 设置圆角的半径
-                        child: UserAvatar(user: widget.user,size: 60))),
+                        child: UserAvatar(user: widget.user, size: 60))),
                 const SizedBox(height: 10)
               ],
             ),

@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import 'package:snatch_card/class/room.dart';
 import 'package:snatch_card/source/userWS.dart';
 import 'package:snatch_card/class/user.dart';
+import 'package:snatch_card/class/chat.dart';
+import 'package:snatch_card/class/router.dart';
 
 // ignore: library_prefixes
 import 'router/router.dart' as PageRouter;
@@ -23,6 +25,7 @@ class MyApp extends StatelessWidget {
           ChangeNotifierProvider(create: (context) => User()),
           ChangeNotifierProvider(create: (context) => Room(playersId: [])),
           ChangeNotifierProvider(create: (context) => UserWS()),
+          ChangeNotifierProvider(create: (context) => MyRouter()),
         ],
         child: MaterialApp(
           title: '抢牌游戏',
@@ -30,7 +33,7 @@ class MyApp extends StatelessWidget {
             colorScheme: ColorScheme.fromSeed(seedColor: GameColor.theme),
             useMaterial3: true,
           ),
-          home: const PageRouter.Router(),
+          home: const PageRouter.RouterPage(),
         ));
   }
 }

@@ -1,16 +1,16 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:snatch_card/source/rootData.dart';
 import 'package:snatch_card/source/userWS.dart';
-import 'package:snatch_card/tool/component.dart';
 import 'package:snatch_card/tool/lib.dart';
 import 'package:snatch_card/tool/source.dart';
-import 'package:snatch_card/class/user.dart';
 import 'package:snatch_card/class/card.dart' as GameCard;
 import 'package:snatch_card/class/userCard.dart';
-import 'package:snatch_card/page/game/game.dart';
 import 'package:snatch_card/source/globalData.dart';
+import 'package:snatch_card/component/BackBtn.dart';
+import 'package:snatch_card/component/MyDialog.dart';
+import 'package:snatch_card/component/UserAvatar.dart';
+import 'package:snatch_card/page/game/component/Cardom.dart';
 
 typedef TapEvent = void Function(int nextPage);
 
@@ -37,7 +37,6 @@ class _ControllerDialogState extends State<ControllerDialog> {
     return RootData.of(context)?.data["cardMap"][userId];
   }
 
-  // TODO
   Widget content() {
     return page[pageData["dialogIndex"] as int];
   }
@@ -229,29 +228,45 @@ class _ChoosePlayerState extends State<ChoosePlayer> {
           user.id == userWS.user.id) {
         continue;
       }
-      list.add(GestureDetector(
-          onTap: () {
-            if (widget.onTap != null) {
-              RootData.of(context)?.data["chooseUserId"] = user.id;
-              widget.onTap!(2);
-            }
-          },
-          child: SizedBox(
-              child: Column(
+      list.add(Column(
+        children: [
+          Stack(
             children: [
-              Container(
-                margin: const EdgeInsets.fromLTRB(10, 10, 10, 0),
-                decoration: BoxDecoration(
-                  border: Border.all(width: 1),
-                  borderRadius: const BorderRadius.all(Radius.circular(10)),
-                ),
-                child: ClipRRect(
-                    borderRadius: BorderRadius.circular(10), // 设置圆角的半径
-                    child: const UserAvatar(size: 60)),
+              Column(
+                children: [
+                  Container(
+                    margin: const EdgeInsets.fromLTRB(10, 10, 10, 0),
+                    decoration: BoxDecoration(
+                      border: Border.all(width: 1),
+                      borderRadius: const BorderRadius.all(Radius.circular(10)),
+                    ),
+                    child: ClipRRect(
+                        borderRadius: BorderRadius.circular(10), // 设置圆角的半径
+                        child: UserAvatar(user: user, size: 60)),
+                  ),
+                  Text(user.nickName!, style: const TextStyle(fontSize: 16))
+                ],
               ),
-              Text(user.nickName!, style: const TextStyle(fontSize: 16))
+              Positioned(
+                  left: 0,
+                  top: 0,
+                  child: GestureDetector(
+                    onTap: () {
+                      if (widget.onTap != null) {
+                        RootData.of(context)?.data["chooseUserId"] = user.id;
+                        widget.onTap!(2);
+                      }
+                    },
+                    child: SizedBox(
+                        width: 90,
+                        height: 90,
+                        child: Container(color: GameColor.dialog3 // 不能去掉
+                            )),
+                  )),
             ],
-          ))));
+          )
+        ],
+      ));
     }
     return list;
   }

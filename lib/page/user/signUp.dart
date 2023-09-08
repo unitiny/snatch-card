@@ -1,12 +1,10 @@
 import 'package:snatch_card/tool/lib.dart';
 import 'package:flutter/material.dart';
-import 'package:snatch_card/page/user/login.dart';
 import 'package:snatch_card/source/http.dart';
-import 'package:snatch_card/tool/lib.dart';
 import 'package:snatch_card/tool/source.dart';
-import 'package:snatch_card/tool/component.dart';
 import 'package:dio/dio.dart';
-import 'dart:async';
+import 'package:snatch_card/component/CommonAppBar.dart';
+import 'package:snatch_card/component/MyDialog.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key, required this.callback});

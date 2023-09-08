@@ -12,6 +12,13 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:mutex/mutex.dart';
 
+class Tip {
+  int stateType;
+  String msgData;
+
+  Tip(this.stateType, this.msgData);
+}
+
 class UserWS extends ChangeNotifier {
   static const host = "ws://139.159.234.134:8000";
   static const socket = "/v1/connectSocket";
@@ -29,7 +36,8 @@ class UserWS extends ChangeNotifier {
     dealFunc[ServiceType.checkHealthMsg] = checkHealth;
     dealFunc[ServiceType.chatResponseType] = chatResponse;
     dealFunc[ServiceType.msgResponseType] = msgResponse;
-    dealFunc[ServiceType.errResponseMsgType] = errResponseMsg;
+    dealFunc[ServiceType.errResponseMsgType] = errResponse;
+    dealFunc[ServiceType.stateInfoResponseType] = stateInfoResponse;
     dealFunc[ServiceType.roomInfoResponseType] = roomInfoResponse;
     dealFunc[ServiceType.kickerResponseType] = kickerResponse;
     dealFunc[ServiceType.beginGameResponseType] = beginGameResponse;
@@ -116,7 +124,7 @@ class UserWS extends ChangeNotifier {
   }
 
   void send(Object data) {
-    if (WS != null) {
+    if (WS != null && WS?.closeCode == null) {
       WS?.sink.add(json.encode(data));
     }
   }
@@ -160,6 +168,11 @@ class UserWS extends ChangeNotifier {
       "type": ClientType.chatMsg,
       "chatMsgData": {"userID": user.id, "data": params["content"]}
     };
+    send(j);
+  }
+
+  dynamic getStateMsg(Map<String, dynamic> params) {
+    var j = {"type": ClientType.getState};
     send(j);
   }
 
@@ -232,6 +245,14 @@ class UserWS extends ChangeNotifier {
     return;
   }
 
+  dynamic getGameState(Map<String, dynamic> params) {
+    var j = {
+      "type": ClientType.getGameState,
+    };
+    send(j);
+    return;
+  }
+
   /*
    被动处理
    */
@@ -242,16 +263,22 @@ class UserWS extends ChangeNotifier {
   dynamic chatResponse(Map<String, dynamic> params) {
     Map<String, dynamic> data = res[params["msgType"]]!;
     store["talker"] = getUser(data["chatInfo"]["userID"]).nickName;
+    store["talkerID"] = data["chatInfo"]["userID"];
     store["chatMsg"] = data["chatInfo"]["chatMsgData"];
   }
 
   dynamic msgResponse(Map<String, dynamic> params) {
     Map<String, dynamic> data = res[params["msgType"]]!;
-    store["tip"] = data["msgInfo"]["msgData"];
+    store["tip"] = Tip(data["msgInfo"]["stateType"], data["msgInfo"]["msgData"]);
   }
 
-  dynamic errResponseMsg(Map<String, dynamic> params) {
+  dynamic errResponse(Map<String, dynamic> params) {
     Map<String, dynamic> data = res[params["msgType"]]!;
+  }
+
+  dynamic stateInfoResponse(Map<String, dynamic> params) {
+    Map<String, dynamic> data = res[params["msgType"]]!;
+    store["state"] = data["getStateInfo"]["state"];
   }
 
   dynamic roomInfoResponse(Map<String, dynamic> params) async {
@@ -275,7 +302,7 @@ class UserWS extends ChangeNotifier {
   dynamic kickerResponse(Map<String, dynamic> params) {
     Map<String, dynamic> data = res[params["msgType"]]!;
     if (user.id == data["kickerInfo"]["ID"]) {
-      store["tip"] = "你已被踢出房间";
+      store["tip"] = Tip(0, "你已被踢出房间");
     }
   }
 
@@ -305,8 +332,22 @@ class UserWS extends ChangeNotifier {
       return cards;
     }
 
-    // 获取用户卡牌
     if (data["gameStateInfo"]["users"] != null) {
+      // 获取用户列表
+      if (userList.isEmpty) {
+        userList = [];
+        for (var user in data["gameStateInfo"]["users"]) {
+          userList.add(User(
+              id: user["userID"],
+              nickname: user["nickname"],
+              username: user["username"],
+              gender: user["gender"],
+              avatar: user["image"],
+              state: UserState.inGame));
+        }
+      }
+
+      // 获取用户卡牌
       Map<int, UserCards> userCards = {};
       store["score"] = {};
       for (var user in data["gameStateInfo"]["users"]) {
@@ -373,8 +414,8 @@ class UserWS extends ChangeNotifier {
           });
 
           store["userCardsMap"][targetUserID].cards = cards;
-          store["tip"] =
-              "${originUser.nickName}使用$specialCardType炸掉了${targetUser.nickName}的普通卡$cardVal";
+          String msgData = "${originUser.nickName}使用$specialCardType炸掉了${targetUser.nickName}的普通卡$cardVal";
+          store["tip"] = Tip(1, msgData);
           break;
         case SpecialCardVal.yellowWildCard:
           // 任意选一张数字类型卡加入自己卡堆
@@ -385,8 +426,8 @@ class UserWS extends ChangeNotifier {
               commonVal: data["useSpecialCardInfo"]["addCardData"]["needNumber"]
                   .toString()));
           store["userCardsMap"][userID].cards = cards;
-          store["tip"] =
-              "${originUser.nickName}使用$specialCardType，获得一张普通卡${data["useSpecialCardInfo"]["addCardData"]["needNumber"]}";
+          String msgData = "${originUser.nickName}使用$specialCardType，获得一张普通卡${data["useSpecialCardInfo"]["addCardData"]["needNumber"]}";
+          store["tip"] = Tip(1, msgData);
           break;
         case SpecialCardVal.greenSwapCard:
           // 可以用自己一张卡与其他玩家交换
@@ -411,8 +452,8 @@ class UserWS extends ChangeNotifier {
               break;
             }
           }
-          store["tip"] =
-              "${originUser.nickName}使用$specialCardType\n${selfCards[selfIndex].commonVal} -> ${targetUser.nickName}\n${originUser.nickName} <- ${targetCards[targetIndex].commonVal}";
+          String msgData = "${originUser.nickName}使用$specialCardType\n${selfCards[selfIndex].commonVal} -> ${targetUser.nickName}\n${originUser.nickName} <- ${targetCards[targetIndex].commonVal}";
+          store["tip"] = Tip(1, msgData);
 
           // 交换卡
           var tempCard = targetCards[targetIndex].copy();
@@ -438,8 +479,8 @@ class UserWS extends ChangeNotifier {
             }
           }
           store["userCardsMap"][targetUserID].cards = cards;
-          store["tip"] =
-              "${originUser.nickName}使用$specialCardType\n${targetUser.nickName}的普通卡$originVal -> ${updateCardData["updateNumber"]}";
+          String msgData = "${originUser.nickName}使用$specialCardType\n${targetUser.nickName}的普通卡$originVal -> ${updateCardData["updateNumber"]}";
+          store["tip"] = Tip(1, msgData);
           break;
       }
 
@@ -505,6 +546,13 @@ class UserWS extends ChangeNotifier {
     return userList.where((element) => element.id == userId).first;
   }
 
+  void reset() {
+    clean();
+    user.clean();
+    userList = [];
+    WS?.sink.close();
+  }
+
   void clean() {
     store = {}; // 储存的数据
     msgList = []; // 消息队列
@@ -515,6 +563,7 @@ class UserWS extends ChangeNotifier {
 class ClientType {
   static const checkHealthMsg = 100;
   static const chatMsg = 101;
+  static const getState = 102;
 
   static const quitRoomMsg = 200;
   static const updateRoomMsg = 201;
@@ -525,6 +574,7 @@ class ClientType {
   static const itemMsg = 300;
   static const grabCardMsg = 301;
   static const useSpecialCardMsg = 302;
+  static const getGameState = 303;
 }
 
 class ServiceType {
@@ -532,6 +582,7 @@ class ServiceType {
   static const chatResponseType = 101;
   static const msgResponseType = 102;
   static const errResponseMsgType = 103;
+  static const stateInfoResponseType = 104;
 
   static const roomInfoResponseType = 200;
   static const kickerResponseType = 201;

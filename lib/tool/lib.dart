@@ -2,12 +2,13 @@ import 'dart:math';
 import 'dart:convert';
 import 'package:snatch_card/class/room.dart';
 import 'package:snatch_card/class/user.dart';
-import 'package:provider/provider.dart';
 import 'package:flutter/material.dart';
 import 'package:snatch_card/source/globalData.dart';
 import 'package:snatch_card/tool/source.dart';
 import 'package:audioplayers/audioplayers.dart';
-import 'package:flutter/foundation.dart';
+import 'package:snatch_card/source/http.dart';
+import 'package:snatch_card/source/userWS.dart';
+import 'package:snatch_card/component/MyDialog.dart';
 
 double pageWidth(BuildContext context) {
   return MediaQuery.of(context).size.width;
@@ -92,7 +93,8 @@ dynamic parseToken(String token) {
   return decodedPayload;
 }
 
-void video(AudioPlayer player, String video, {isloop = false, volume = 0.5}) async {
+void video(AudioPlayer player, String video,
+    {isloop = false, volume = 0.5}) async {
   // if (kReleaseMode) {
   //   // 由于audioplayers用的是绝对路径，打包后路径会出错，因此在此修改
   //   video = "assets/$video";
@@ -105,5 +107,41 @@ void video(AudioPlayer player, String video, {isloop = false, volume = 0.5}) asy
 }
 
 dynamic getErr(dynamic err) {
-  return json.decode(err.response.toString());
+  try{
+    return json.decode(err.response.toString());
+  }catch(e) {
+    print("[getErr] $e");
+    return {"err": ""};
+  }
+}
+
+Future connectRoom(BuildContext context) async {
+  // 获得连接服务器信息
+  await HttpRequest().GETByToken(API.getConnInfo, token(context)).then((res) {
+    // 建立ws连接
+    User user = GlobalData().user(context);
+    setUseState(context, UserState.inRoomReady); // 房主默认准备
+    bool isConnect = GlobalData()
+        .userWS(context)
+        .connectWS(user, res.data["serverInfo"], res.data["roomID"]);
+
+    Room room = GlobalData().room(context);
+    room.state = RoomState.wait;
+    room.id = int.parse(res.data["roomID"]);
+    room.roomOwnerId = user.id;
+    room.chatRecord = [];
+    if (!isConnect) {
+      MyDialog().lightTip(context, "网络连接失败");
+    }
+  }).catchError((e) {
+    var res = getErr(e);
+    MyDialog().lightTip(context, "${res["err"]}");
+  });
+}
+
+void checkAndConnect(BuildContext context) async {
+  UserWS userWS = GlobalData().userWS(context);
+  if(userWS.WS == null || userWS.WS?.closeCode != null) {
+    await connectRoom(context);
+  }
 }

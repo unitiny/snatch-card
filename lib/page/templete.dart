@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:snatch_card/tool/source.dart';
 import 'package:snatch_card/tool/lib.dart';
-import 'package:snatch_card/tool/component.dart';
+
 
 class CreateRoomPage extends StatefulWidget {
   const CreateRoomPage({super.key});

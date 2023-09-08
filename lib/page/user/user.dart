@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:snatch_card/class/user.dart';
 import 'package:snatch_card/page/user/login.dart';
-import 'package:snatch_card/tool/component.dart';
 import 'package:snatch_card/tool/source.dart';
 import 'package:snatch_card/page/user/modify.dart';
 import 'package:snatch_card/source/globalData.dart';
+import 'package:snatch_card/component/StartGame.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:snatch_card/component/UserAvatar.dart';
 
 class UserPage extends StatefulWidget {
   const UserPage({super.key});
@@ -16,6 +16,8 @@ class UserPage extends StatefulWidget {
 }
 
 class _UserPageState extends State<UserPage> {
+  User user = User();
+
   void update(User? user, User? newUser) {
     if (user == null || newUser == null) {
       return;
@@ -27,7 +29,7 @@ class _UserPageState extends State<UserPage> {
 
   @override
   Widget build(BuildContext context) {
-    User user = GlobalData().user(context);
+    user = GlobalData().user(context);
     user.state = UserState.inHome;
     return Column(children: [
       Expanded(
@@ -42,10 +44,10 @@ class _UserPageState extends State<UserPage> {
                   padding: const EdgeInsets.symmetric(horizontal: 16.0),
                   child: Row(
                     children: [
-                      const CircleAvatar(
+                      CircleAvatar(
                           backgroundColor: Colors.grey,
                           radius: 50.0,
-                          child: ClipOval(child: UserAvatar(size: 95))),
+                          child: ClipOval(child: UserAvatar(user: user, size: 95))),
                       const SizedBox(width: 16.0),
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -94,6 +96,7 @@ class _UserPageState extends State<UserPage> {
                   leading: const Icon(Icons.exit_to_app),
                   title: const Text('退出登录'),
                   onTap: () async {
+                    // 清空数据
                     SharedPreferences prefs =
                         await SharedPreferences.getInstance();
                     if (prefs.getString("token") != null) {
@@ -101,6 +104,7 @@ class _UserPageState extends State<UserPage> {
                     }
 
                     if (mounted) {
+                      GlobalData().clean(context);
                       Navigator.pushAndRemoveUntil(
                           context,
                           MaterialPageRoute(

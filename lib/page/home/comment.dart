@@ -1,17 +1,13 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:snatch_card/source/userWS.dart';
-import 'package:snatch_card/source/rootData.dart';
 import 'package:snatch_card/tool/source.dart';
 import 'package:snatch_card/tool/lib.dart';
-import 'package:snatch_card/tool/component.dart';
-import 'package:snatch_card/class/room.dart';
 import 'package:snatch_card/class/user.dart';
 import 'package:snatch_card/source/http.dart';
 import 'package:snatch_card/source/globalData.dart';
-import 'package:snatch_card/router/router.dart' as PageRouter;
-import 'package:supercharged/supercharged.dart';
+import 'package:snatch_card/component/CommonAppBar.dart';
+import 'package:snatch_card/component/MyDialog.dart';
+
 
 class Comment {
   int id;
@@ -35,7 +31,7 @@ class _CreateRoomPage extends State<CommentPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      resizeToAvoidBottomInset: false,
+      resizeToAvoidBottomInset: true,
       appBar: CommonAppBar(title: "留言板"),
       body: Center(
         child: Container(
@@ -43,7 +39,7 @@ class _CreateRoomPage extends State<CommentPage> {
             height: double.infinity,
             color: GameColor.theme,
             child: const Column(children: [
-              Expanded(flex: 13, child: Header()),
+              // Expanded(flex: 13, child: Header()),
               Expanded(flex: 75, child: Body()),
               Expanded(flex: 5, child: Footer()),
             ])),
@@ -105,20 +101,23 @@ class _BodyState extends State<Body> {
     return [];
   }
 
-  sendComment(Comment cm) async {
-    try {
-      Response res = await HttpRequest().POSTByToken(API.commentAdd, token(context), FormData.fromMap({
-        "nickName": cm.userId,
-        "content": cm.content
-      }));
-      MyDialog().lightTip(context, "发送成功", canPop: false);
-    }catch(e) {
-      print(e);
-      MyDialog().lightTip(context, "添加评论失败", canPop: false);
-
-      // var res = getErr(e);
-      // MyDialog().lightTip(context, "${res["err"]}");
-    }
+  void updateList(int opt, int index, List<Comment> cms) {
+    setState(() {
+      // 0添加 1更新 2删除
+      if (opt == 0) {
+        list.addAll(cms);
+      } else if (opt == 1) {
+        if (index < 0 || index >= list.length) {
+          return;
+        }
+        list[index] = cms[0];
+      } else if (opt == 2) {
+        if (index < 0 || index >= list.length) {
+          return;
+        }
+        list.removeAt(index);
+      }
+    });
   }
 
   @override
@@ -131,8 +130,10 @@ class _BodyState extends State<Body> {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Expanded(flex: 8, child: CommentList(commentList: list)),
-        Expanded(flex: 1, child: SendComment(callback: sendComment)),
+        Expanded(
+            flex: 8,
+            child: CommentList(commentList: list, callback: updateList)),
+        Expanded(flex: 1, child: SendComment(callback: updateList)),
       ],
     );
   }
@@ -142,7 +143,7 @@ class CommentList extends StatefulWidget {
   const CommentList({super.key, this.commentList, this.callback});
 
   final List<Comment>? commentList;
-  final void Function()? callback;
+  final void Function(int opt, int index, List<Comment> cms)? callback;
 
   @override
   State<CommentList> createState() => _CommentListState();
@@ -152,7 +153,8 @@ class _CommentListState extends State<CommentList> {
   final ScrollController _scrollController = ScrollController();
 
   Widget _initElement(BuildContext context, int index) {
-    return CommentElement(widget.commentList![index]);
+    return CommentElement(index, widget.commentList![index],
+        callback: widget.callback);
   }
 
   @override
@@ -180,15 +182,49 @@ class _CommentListState extends State<CommentList> {
 }
 
 class CommentElement extends StatefulWidget {
-  const CommentElement(this.comment, {super.key});
+  const CommentElement(this.index, this.comment, {super.key, this.callback});
 
+  final int index;
   final Comment comment;
+  final void Function(int opt, int index, List<Comment> cms)? callback;
 
   @override
   State<CommentElement> createState() => _CommentElementState();
 }
 
 class _CommentElementState extends State<CommentElement> {
+  Widget Operation() {
+    if (GlobalData().user(context).id != widget.comment.userId) {
+      return Container();
+    }
+    return Row(
+      children: [
+        // GestureDetector(onTap: delete, child: const Icon(Icons.edit)),
+        const SizedBox(width: 5),
+        GestureDetector(
+            onTap: delete, child: const Icon(Icons.delete, color: Colors.red))
+      ],
+    );
+  }
+
+  Future update() async {
+
+  }
+
+  Future delete() async {
+    try {
+      String url = "${API.commentDel}/${widget.comment.id}";
+      Response res = await HttpRequest().DELETEByToken(url, token(context), {});
+      widget.callback!(2, widget.index, []);
+      MyDialog().lightTip(context, "删除成功", canPop: false);
+    } catch (e) {
+      print(e);
+      MyDialog().lightTip(context, "删除评论失败", canPop: false);
+      // var res = getErr(e);
+      // MyDialog().lightTip(context, "${res["err"]}");
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -200,9 +236,15 @@ class _CommentElementState extends State<CommentElement> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(widget.comment.nickName,
-              style:
-                  const TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(widget.comment.nickName,
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold, fontSize: 20)),
+              Operation()
+            ],
+          ),
           Text(widget.comment.time,
               style:
                   const TextStyle(fontWeight: FontWeight.normal, fontSize: 16)),
@@ -218,7 +260,8 @@ class _CommentElementState extends State<CommentElement> {
 
 class SendComment extends StatefulWidget {
   const SendComment({super.key, this.callback});
-  final Function(Comment cm)? callback;
+
+  final Function(int opt, int index, List<Comment> cms)? callback;
 
   @override
   State<SendComment> createState() => _SendCommentState();
@@ -237,13 +280,30 @@ class _SendCommentState extends State<SendComment> {
     if (message != "") {
       User user = GlobalData().user(context);
       Comment cm = commentMsg(user.id, user.nickName!, message);
-      widget.callback!(cm);
+      sendComment(cm);
       setState(() {
         message = "";
         _editController.clear();
         FocusScope.of(context).unfocus();
         // dropMessage();
       });
+    }
+  }
+
+  void sendComment(Comment cm) async {
+    try {
+      Response res = await HttpRequest().POSTByToken(
+          API.commentAdd,
+          token(context),
+          FormData.fromMap({"nickName": cm.nickName, "content": cm.content}));
+
+      widget.callback!(0, 0, [cm]);
+      MyDialog().lightTip(context, "发送成功", canPop: false);
+    } catch (e) {
+      print(e);
+      MyDialog().lightTip(context, "添加评论失败", canPop: false);
+      // var res = getErr(e);
+      // MyDialog().lightTip(context, "${res["err"]}");
     }
   }
 

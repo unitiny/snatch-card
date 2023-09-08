@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:snatch_card/page/home/chat.dart';
 
 class HttpRequest {
   Future<Response> GET(String url) async {
@@ -6,11 +7,16 @@ class HttpRequest {
     return await dio.get("${API.serviceHost}$url");
   }
 
-  Future<Response> GETByToken(String url, String token) async {
+  Future<Response> GETByToken(String url, String token,
+      {String? otherUrl, CancelToken? cancelToken}) async {
     BaseOptions options = BaseOptions();
     options.headers["token"] = token;
     Dio dio = Dio(options);
-    return await dio.get("${API.serviceHost}$url");
+
+    if (otherUrl != null) {
+      return await dio.get(otherUrl, cancelToken: cancelToken);
+    }
+    return await dio.get("${API.serviceHost}$url", cancelToken: cancelToken);
   }
 
   Future<Response> POST(String url, Object params) async {
@@ -18,10 +24,14 @@ class HttpRequest {
     return await dio.post("${API.serviceHost}$url", data: params);
   }
 
-  Future<Response> POSTByToken(String url, String token, Object params) async {
+  Future<Response> POSTByToken(String url, String token, Object params, {String? otherUrl}) async {
     BaseOptions options = BaseOptions();
     options.headers["token"] = token;
     Dio dio = Dio(options);
+
+    if (otherUrl != null) {
+      return await dio.post(otherUrl, data: params);
+    }
     return await dio.post("${API.serviceHost}$url", data: params);
   }
 
@@ -40,6 +50,22 @@ class HttpRequest {
     }
     return await dio.put("${API.serviceHost}$url", data: params);
   }
+
+  Future<Response> DELETE(String url, Object params) async {
+    Dio dio = Dio();
+    return await dio.delete("${API.serviceHost}$url", data: params);
+  }
+
+  Future<Response> DELETEByToken(String url, String token, Object params,
+      {String? otherUrl}) async {
+    BaseOptions options = BaseOptions();
+    options.headers["token"] = token;
+    Dio dio = Dio(options);
+    if (otherUrl != null) {
+      return await dio.delete(otherUrl, data: params);
+    }
+    return await dio.delete("${API.serviceHost}$url", data: params);
+  }
 }
 
 class API {
@@ -53,13 +79,14 @@ class API {
   static const modify = "/user/v1/modify";
   static const search = "/user/v1/search";
 
-  // 房间
+  // 房间和游戏
   static const getRoomList = "/game/v1/getRoomList";
   static const createRoom = "/game/v1/createRoom";
   static const joinRoom = "/v1/userIntoRoom";
   static const getConnInfo = "/game/v1/getConnInfo";
   static const enterRoom = "/game/v1/userIntoRoom";
   static const selectRoom = "/game/v1/selectRoomServer";
+  static const getRanks = "/game/v1/getRanks";
 
   // 文件
   static const uploadImage = "/file/v1/uploadImage";
@@ -70,6 +97,10 @@ class API {
   static const commentAdd = "/hall/v1/comment/add";
   static const commentUpdate = "/hall/v1/comment/update";
   static const commentDel = "/hall/v1/comment/del";
+
+  static const chatAdd = "/hall/v1/chat/addChat";
+  static const chatList = "/hall/v1/chat/chatList";
+  static const listen = "/hall/v1/chat/listen";
 }
 
 class HTTPStatus {

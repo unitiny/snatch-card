@@ -1,15 +1,13 @@
-import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:provider/provider.dart';
 import 'package:snatch_card/source/http.dart';
 import 'package:snatch_card/source/platform.dart';
 import 'package:snatch_card/tool/lib.dart';
-import 'package:snatch_card/tool/source.dart';
 import 'package:snatch_card/class/user.dart';
-import 'package:snatch_card/tool/component.dart';
 import 'package:snatch_card/source/globalData.dart';
+import 'package:snatch_card/component/MyDialog.dart';
+import 'package:snatch_card/component/UserAvatar.dart';
 
 class EditProfileDialog extends StatefulWidget {
   final String? account;
@@ -64,7 +62,7 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
                       radius: 50.0,
                       child: ClipOval(
                         child: _avatarImage == ""
-                            ? const UserAvatar(size: 95)
+                            ? UserAvatar(user: user, size: 95)
                             : Image.network(_avatarImage!,
                                 width: 95, height: 95, fit: BoxFit.cover),
                       )),
@@ -149,7 +147,7 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
                     username: _accountController.text,
                     nickname: _nickNameController.text);
                 Navigator.of(context).pop(user);
-                MyDialog().lightTip(context, "修改成功");
+                MyDialog().lightTip(context, "修改成功", canPop: true);
               }
             },
             elevation: 3,

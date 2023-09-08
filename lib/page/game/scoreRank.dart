@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:snatch_card/source/rootData.dart';
 import 'package:snatch_card/source/userWS.dart';
-import 'package:snatch_card/tool/component.dart';
+
 import 'package:snatch_card/tool/lib.dart';
 import 'package:snatch_card/tool/source.dart';
 import 'package:snatch_card/router/router.dart' as PageRouter;
@@ -11,6 +11,7 @@ import 'package:snatch_card/class/user.dart';
 import 'package:snatch_card/class/card.dart' as GameCard;
 import 'package:snatch_card/class/userCard.dart';
 import 'package:snatch_card/page/game/game.dart';
+import 'package:snatch_card/component/BackBtn.dart';
 import 'package:snatch_card/source/globalData.dart';
 
 class ScoreRank {
@@ -188,12 +189,15 @@ class _ScoreRankDialogState extends State<ScoreRankDialog> {
                 right: 0,
                 child: BackBtn(
                     onTap: () {
+                      // 服务器用户状态暂时在这修改
+                      GlobalData().user(context).serverState = UserState.inRoom;
+                      GlobalData().user(context).state = UserState.inRoom;
                       UserWS userWS = GlobalData().userWS(context);
                       userWS.clean();
                       Navigator.pushAndRemoveUntil(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => PageRouter.Router(
+                            builder: (context) => PageRouter.RouterPage(
                               pageIndex: 1,
                               title: GlobalData().room(context).roomName,
                             ),

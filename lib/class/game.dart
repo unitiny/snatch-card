@@ -10,6 +10,7 @@ class Game extends ChangeNotifier {
   int? totalRound;
   int? timer = 0;
   bool? showWindow = false;
+  bool? showChat = false;
   String? curStage = GameStage.deal; // 阶段
   ValueNotifier<bool> listener = ValueNotifier(false);
 

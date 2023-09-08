@@ -48,6 +48,7 @@ dependencies:
   supercharged_dart: ^2.1.1
   simple_animations: ^5.0.2
   audioplayers: ^4.1.0
+  dart_amqp: ^0.2.5
 
 dev_dependencies:
   flutter_test:

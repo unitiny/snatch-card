@@ -1,18 +1,16 @@
-import 'dart:io';
-import 'dart:math';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:snatch_card/source/platform.dart';
 import 'package:flutter/material.dart';
 import 'package:snatch_card/source/http.dart';
 import 'package:snatch_card/class/user.dart';
 import 'package:snatch_card/tool/source.dart';
-import 'package:snatch_card/tool/component.dart';
 import 'package:dio/dio.dart';
 import 'package:snatch_card/page/user/signUp.dart';
 import 'package:snatch_card/router/router.dart' as PageRouter;
 import 'package:snatch_card/tool/lib.dart';
 import 'dart:async';
 import 'package:snatch_card/source/globalData.dart';
+import 'package:snatch_card/component/CommonAppBar.dart';
+import 'package:snatch_card/component/MyDialog.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -144,7 +142,7 @@ class _LoginScreenState extends State<LoginScreen> {
             Timer.periodic(const Duration(milliseconds: 500), (timer) {
               Navigator.pushAndRemoveUntil(context,
                   MaterialPageRoute(builder: (BuildContext context) {
-                return const PageRouter.Router(pageIndex: 2);
+                return const PageRouter.RouterPage(pageIndex: 2);
               }), (router) => false);
               timer.cancel();
             });
