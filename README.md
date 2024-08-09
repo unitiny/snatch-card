@@ -1,7 +1,6 @@
 # snatch_card
 
-snatch_card game
-使用flutter开发
+snatch_card game，枪卡游戏，前端使用flutter开发。具体技术介绍：https://juejin.cn/post/7258607903585353784
 
 ## 介绍
 
